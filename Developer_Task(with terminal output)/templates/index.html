@@ -1,0 +1,402 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Pipeline - PDF Q&A System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #4facfe;
+        }
+
+        .section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-container {
+            background: #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-area {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1em;
+            resize: vertical;
+        }
+
+        .answer-area {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 200px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+        }
+
+        .quick-questions {
+            display: grid;
+            gap: 10px;
+        }
+
+        .quick-btn {
+            text-align: left;
+            background: white;
+            color: #333;
+            border: 2px solid #e9ecef;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quick-btn:hover {
+            border-color: #4facfe;
+            background: #f8f9fa;
+        }
+
+        .status {
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+
+        .file-list {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 RAG Pipeline</h1>
+            <p>PDF Document Q&A System</p>
+        </div>
+
+        <div class="content">
+            <!-- PDF Processing Section -->
+            <div class="section">
+                <h3>📁 PDF Processing</h3>
+                <p>Found {{ pdf_count }} PDF files in the pdfs directory:</p>
+
+                <div class="file-list">
+                    {% if pdf_files %}
+                        {% for file in pdf_files %}
+                            <div class="file-item">📄 {{ file }}</div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="file-item">No PDF files found. Please add PDF files to the 'pdfs' directory.</div>
+                    {% endif %}
+                </div>
+
+                <button class="btn" id="processBtn" onclick="processPDFs()"
+                        {% if pdf_count == 0 %}disabled{% endif %}>
+                    ⚡ Process PDFs
+                </button>
+
+                <div class="progress-container" id="progressContainer">
+                    <div id="progressMessage">Starting processing...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Questions Section -->
+            <div class="section">
+                <h3>❓ Quick Questions</h3>
+                <div class="quick-questions">
+                    <button class="quick-btn" onclick="askQuickQuestion(1)">
+                        <strong>Q1:</strong> Wie hoch ist die Grundzulage?
+                    </button>
+                    <button class="quick-btn" onclick="askQuickQuestion(2)">
+                        <strong>Q2:</strong> Wie werden Versorgungsleistungen aus einer Direktzusage oder einer Unterstützungskasse steuerlich behandelt?
+                    </button>
+                    <button class="quick-btn" onclick="askQuickQuestion(3)">
+                        <strong>Q3:</strong> Wie werden Leistungen aus einer Direktversicherung, Pensionskasse oder einem Pensionsfonds in der Auszahlungsphase besteuert?
+                    </button>
+                </div>
+            </div>
+
+            <!-- Custom Question Section -->
+            <div class="section">
+                <h3>💭 Ask Your Own Question</h3>
+                <textarea class="question-area" id="questionInput"
+                          placeholder="Type your question here..."></textarea>
+                <br>
+                <button class="btn" id="askBtn" onclick="askCustomQuestion()">
+                    🔍 Ask Question
+                </button>
+
+                <div class="answer-area" id="answerArea">
+                    Your answer will appear here...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isProcessing = false;
+
+        function processPDFs() {
+            if (isProcessing) return;
+
+            isProcessing = true;
+            document.getElementById('processBtn').disabled = true;
+            document.getElementById('processBtn').innerHTML = '<span class="loading"></span> Processing...';
+            document.getElementById('progressContainer').style.display = 'block';
+
+            fetch('/process', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        showStatus(data.error, 'error');
+                        resetProcessButton();
+                    } else {
+                        checkProcessingStatus();
+                    }
+                })
+                .catch(error => {
+                    showStatus('Error: ' + error.message, 'error');
+                    resetProcessButton();
+                });
+        }
+
+        function checkProcessingStatus() {
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('progressMessage').textContent = data.message;
+                    document.getElementById('progressFill').style.width = data.progress + '%';
+
+                    if (data.status === 'processing') {
+                        setTimeout(checkProcessingStatus, 1000);
+                    } else if (data.status === 'complete') {
+                        showStatus('✅ ' + data.message, 'success');
+                        resetProcessButton();
+                        document.getElementById('processBtn').textContent = '✅ Ready for Questions';
+                    } else if (data.status === 'error') {
+                        showStatus('❌ Error: ' + data.message, 'error');
+                        resetProcessButton();
+                    }
+                })
+                .catch(error => {
+                    showStatus('Status check error: ' + error.message, 'error');
+                    resetProcessButton();
+                });
+        }
+
+        function resetProcessButton() {
+            isProcessing = false;
+            document.getElementById('processBtn').disabled = false;
+            if (document.getElementById('processBtn').textContent.includes('Processing')) {
+                document.getElementById('processBtn').textContent = '⚡ Process PDFs';
+            }
+            setTimeout(() => {
+                document.getElementById('progressContainer').style.display = 'none';
+            }, 2000);
+        }
+
+        function askQuickQuestion(qId) {
+            document.getElementById('answerArea').innerHTML = '<span class="loading"></span> Searching for answer...';
+
+            fetch(`/quick-question/${qId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('answerArea').textContent = '❌ Error: ' + data.error;
+                    } else {
+                        displayAnswer(data);
+                        if (data.question) {
+                            document.getElementById('questionInput').value = data.question;
+                        }
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('answerArea').textContent = '❌ Error: ' + error.message;
+                });
+        }
+
+        function askCustomQuestion() {
+            const question = document.getElementById('questionInput').value.trim();
+            if (!question) {
+                alert('Please enter a question!');
+                return;
+            }
+
+            document.getElementById('askBtn').disabled = true;
+            document.getElementById('askBtn').innerHTML = '<span class="loading"></span> Searching...';
+            document.getElementById('answerArea').innerHTML = '<span class="loading"></span> Searching for answer...';
+
+            fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: question })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('answerArea').textContent = '❌ Error: ' + data.error;
+                } else {
+                    displayAnswer(data);
+                }
+                document.getElementById('askBtn').disabled = false;
+                document.getElementById('askBtn').textContent = '🔍 Ask Question';
+            })
+            .catch(error => {
+                document.getElementById('answerArea').textContent = '❌ Error: ' + error.message;
+                document.getElementById('askBtn').disabled = false;
+                document.getElementById('askBtn').textContent = '🔍 Ask Question';
+            });
+        }
+
+        function displayAnswer(data) {
+            let answer = `📝 Answer:
+${data.answer}
+
+`;
+
+            if (data.sources && data.sources.length > 0) {
+                answer += `📚 Sources: ${data.sources.join(', ')}
+`;
+            }
+
+            if (data.confidence) {
+                answer += `🎯 Confidence: ${(data.confidence * 100).toFixed(1)}%
+`;
+            }
+
+            document.getElementById('answerArea').textContent = answer;
+        }
+
+        function showStatus(message, type) {
+            // You can implement a status notification system here
+            console.log(`${type.toUpperCase()}: ${message}`);
+        }
+
+        // Enter key support for question input
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('questionInput').addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    askCustomQuestion();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

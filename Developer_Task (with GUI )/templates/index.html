@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Pipeline - PDF Q&A System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 RAG Pipeline</h1>
+            <p>PDF Document Q&A System</p>
+        </div>
+
+        <div class="content">
+            <!-- PDF Processing Section -->
+            <div class="section">
+                <h3>📁 PDF Processing</h3>
+                <p>Found {{ pdf_count }} PDF files in the pdfs directory:</p>
+
+                <div class="file-list">
+                    {% if pdf_files %}
+                        {% for file in pdf_files %}
+                            <div class="file-item">📄 {{ file }}</div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="file-item">No PDF files found. Please add PDF files to the 'pdfs' directory.</div>
+                    {% endif %}
+                </div>
+
+                <button class="btn" id="processBtn" onclick="processPDFs()"
+                        {% if pdf_count == 0 %}disabled{% endif %}>
+                    ⚡ Process PDFs
+                </button>
+
+                <div class="progress-container" id="progressContainer">
+                    <div id="progressMessage">Starting processing...</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Questions Section -->
+            <div class="section">
+                <h3>❓ Quick Questions</h3>
+                <div class="quick-questions">
+                    <button class="quick-btn" onclick="askQuickQuestion(1)">
+                        <strong>Q1:</strong> Wie hoch ist die Grundzulage?
+                    </button>
+                    <button class="quick-btn" onclick="askQuickQuestion(2)">
+                        <strong>Q2:</strong> Wie werden Versorgungsleistungen aus einer Direktzusage oder einer Unterstützungskasse steuerlich behandelt?
+                    </button>
+                    <button class="quick-btn" onclick="askQuickQuestion(3)">
+                        <strong>Q3:</strong> Wie werden Leistungen aus einer Direktversicherung, Pensionskasse oder einem Pensionsfonds in der Auszahlungsphase besteuert?
+                    </button>
+                </div>
+            </div>
+
+            <!-- Custom Question Section -->
+            <div class="section">
+                <h3>💭 Ask Your Own Question</h3>
+                <textarea class="question-area" id="questionInput"
+                          placeholder="Type your question here..."></textarea>
+                <br>
+                <button class="btn" id="askBtn" onclick="askCustomQuestion()">
+                    🔍 Ask Question
+                </button>
+
+                <div class="answer-area" id="answerArea">
+                    Your answer will appear here...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
