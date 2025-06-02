@@ -1,0 +1,13 @@
+{
+  "total_chunks": 5940,
+  "total_documents": 9,
+  "config": {
+    "model_name": "all-MiniLM-L6-v2",
+    "chunk_size": 600,
+    "chunk_overlap": 75,
+    "max_context_length": 2500,
+    "similarity_threshold": 0.25,
+    "max_results": 10,
+    "min_chunk_length": 20
+  }
+}
