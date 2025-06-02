@@ -97,7 +97,7 @@ python Aufgabe.py
 
 #### Example Session
 ```bash
-$ python Aufgabe_CLI.py
+$ python Aufgabe.py
 Processing PDF files...
 Processing: document1.pdf
 Processing: document2.pdf
